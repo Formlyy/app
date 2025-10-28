@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formly - Form Builder</title>
+    <!-- 1. Load Tailwind CSS from CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Simple style to hide pages */
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans antialiased">
+
+    <!-- 2. Re-usable Header -->
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-5 max-w-4xl">
+            <h1 id="header-title" class="text-3xl font-bold text-gray-800 cursor-pointer">
+                Formly 📝
+            </h1>
+            <p class="text-gray-600">Your new favorite form builder.</p>
+        </div>
+    </header>
+
+    <!-- 3. Main Content Area -->
+    <main class="container mx-auto px-4 py-8 max-w-4xl">
+
+        <!-- All "pages" are in the HTML. We'll show/hide them with JS. -->
+
+        <!-- PAGE: Home -->
+        <div id="page-home" class="page space-y-6">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700">Create a New Form</h2>
+                <p class="mb-4 text-gray-600">Start from scratch and build your perfect form.</p>
+                <button id="btn-go-to-create" class="w-full bg-blue-600 text-white font-bold py-3 px-5 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    Create New Form
+                </button>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700">View an Existing Form</h2>
+                <p class="mb-4 text-gray-600">Have a form ID? Enter it below to view and submit a response.</p>
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                    <input id="input-form-id" type="text" placeholder="Enter Form ID" class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                    <button id="btn-load-form" class="bg-gray-700 text-white font-bold py-3 px-5 rounded-lg hover:bg-gray-800 transition-colors duration-200">
+                        Load Form
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE: Create Form -->
+        <form id="page-create" class="page bg-white p-6 sm:p-8 rounded-lg shadow-md space-y-6">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-700">Create New Form</h2>
+            
+            <div class="space-y-2">
+                <label for="creator-title" class="block text-sm font-medium text-gray-700">Form Title</label>
+                <input id="creator-title" type="text" placeholder="My Awesome Form" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            </div>
+            <div class="space-y-2">
+                <label for="creator-description" class="block text-sm font-medium text-gray-700">Description (Optional)</label>
+                <textarea id="creator-description" rows="3" placeholder="Enter a description for your form..." class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+            </div>
+
+            <hr />
+            
+            <h3 class="text-xl font-semibold text-gray-700">Questions</h3>
+            <!-- Container where JS will add question editor blocks -->
+            <div id="creator-questions-container" class="space-y-6"></div>
+
+            <div class="flex flex-wrap gap-2 pt-4 border-t">
+                <button type="button" data-type="text" class="btn-add-question bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm hover:bg-gray-300">Add Text</button>
+                <button type="button" data-type="paragraph" class="btn-add-question bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm hover:bg-gray-300">Add Paragraph</button>
+                <button type="button" data-type="multiple-choice" class="btn-add-question bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm hover:bg-gray-300">Add Multiple Choice</button>
+                <button type="button" data-type="checkbox" class="btn-add-question bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm hover:bg-gray-300">Add Checkbox</button>
+            </div>
+
+            <div id="creator-error" class="text-red-500 text-sm hidden"></div>
+            
+            <div class="flex justify-end pt-4">
+                <button type="submit" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    Save Form
+                </button>
+            </div>
+        </form>
+
+        <!-- PAGE: View/Submit Form -->
+        <!-- This is a container for the dynamically rendered form -->
+        <div id="page-view" class="page">
+            <div id="view-loading" class="text-center p-10">Loading form...</div>
+            <div id="view-error" class_id="text-center p-10 text-red-600 bg-red-50 rounded-lg hidden"></div>
+            <form id="view-form-container" class="bg-white p-6 sm:p-8 rounded-lg shadow-md space-y-8"></form>
+        </div>
+
+        <!-- PAGE: Thank You -->
+        <div id="page-submitted" class="page text-center bg-white p-10 rounded-lg shadow-md">
+            <h2 class="text-3xl font-bold text-green-600 mb-4">Thank You!</h2>
+            <p class="text-gray-700 text-lg mb-6">Your response has been submitted successfully.</p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <button id="btn-create-another" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700">
+                    Create Another Form
+                </button>
+                <button id="btn-go-home" class="bg-gray-700 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-800">
+                    Go Home
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 4. JavaScript Logic -->
+    <script>
+        // Wait for the DOM to be fully loaded before running scripts
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- STATE & CONSTANTS ---
+            
+            // This is the base URL for your backend API.
+            const API_BASE_URL = 'http://localhost:5001/api';
+
+            // We use a simple object to manage our application's state,
+            // similar to React's `useState`.
+            const appState = {
+                view: 'home', // 'home', 'create', 'viewForm', 'submitted'
+                currentFormId: null,
+                creatorQuestions: [], // Stores the questions for the form builder
+                currentForm: null // Caches the form being viewed
+            };
+
+            // --- DOM ELEMENT SELECTORS ---
+            const pages = document.querySelectorAll('.page');
+            const pageHome = document.getElementById('page-home');
+            const pageCreate = document.getElementById('page-create');
+            const pageView = document.getElementById('page-view');
+            const pageSubmitted = document.getElementById('page-submitted');
+
+            const headerTitle = document.getElementById('header-title');
+            
+            // Home Page
+            const btnGoToCreate = document.getElementById('btn-go-to-create');
+            const btnLoadForm = document.getElementById('btn-load-form');
+            const inputFormId = document.getElementById('input-form-id');
+
+            // Create Page
+            const creatorForm = document.getElementById('page-create');
+            const creatorTitle = document.getElementById('creator-title');
+            const creatorDescription = document.getElementById('creator-description');
+            const creatorQuestionsContainer = document.getElementById('creator-questions-container');
+            const addQuestionButtons = document.querySelectorAll('.btn-add-question');
+            const creatorError = document.getElementById('creator-error');
+
+            // View Page
+            const viewLoading = document.getElementById('view-loading');
+            const viewError = document.getElementById('view-error');
+            const viewFormContainer = document.getElementById('view-form-container');
+
+            // Submitted Page
+            const btnCreateAnother = document.getElementById('btn-create-another');
+            const btnGoHome = document.getElementById('btn-go-home');
+
+            // --- API HELPER ---
+            // A simple wrapper for fetch to handle JSON and errors
+            const api = {
+                get: async (endpoint) => {
+                    const res = await fetch(`${API_BASE_URL}${endpoint}`);
+                    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+                    return res.json();
+                },
+                post: async (endpoint, body) => {
+                    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body),
+                    });
+                    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+                    return res.json();
+                }
+            };
+
+            // --- NAVIGATION / "ROUTING" ---
+            
+            /**
+             * Controls which "page" is visible. This is the core of our
+             * single-page application.
+             * @param {string} newView - The ID of the page to show.
+             * @param {string|null} formId - Optional form ID to set in state.
+             */
+            function navigateTo(newView, formId = null) {
+                appState.view = newView;
+                if (formId) {
+                    appState.currentFormId = formId;
+                }
+
+                // Hide all pages
+                pages.forEach(page => page.classList.remove('active'));
+
+                // Show the active page
+                switch (newView) {
+                    case 'home':
+                        pageHome.classList.add('active');
+                        break;
+                    case 'create':
+                        pageCreate.classList.add('active');
+                        // Reset creator form
+                        creatorTitle.value = '';
+                        creatorDescription.value = '';
+                        appState.creatorQuestions = [];
+                        renderCreatorQuestions();
+                        break;
+                    case 'viewForm':
+                        pageView.classList.add('active');
+                        renderFormViewer(); // Fetch and render the form
+                        break;
+                    case 'submitted':
+                        pageSubmitted.classList.add('active');
+                        break;
+                }
+            }
+
+            // --- PAGE LOGIC: HOME ---
+
+            headerTitle.addEventListener('click', () => navigateTo('home'));
+            btnGoToCreate.addEventListener('click', () => navigateTo('create'));
+            btnLoadForm.addEventListener('click', () => {
+                const formId = inputFormId.value.trim();
+                if (formId) {
+                    navigateTo('viewForm', formId);
+                    inputFormId.value = '';
+                }
+            });
+
+            // --- PAGE LOGIC: SUBMITTED ---
+
+            btnCreateAnother.addEventListener('click', () => navigateTo('create'));
+            btnGoHome.addEventListener('click', () => navigateTo('home'));
+
+            // --- PAGE LOGIC: FORM CREATOR ---
+
+            // Add question button listeners
+            addQuestionButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const type = btn.dataset.type;
+                    const newQuestion = {
+                        // Use a temporary ID for managing in the UI
+                        tempId: Date.now(), 
+                        label: 'Untitled Question',
+                        type: type,
+                        required: false,
+                        options: (type === 'multiple-choice' || type === 'checkbox') ? ['Option 1'] : [],
+                    };
+                    appState.creatorQuestions.push(newQuestion);
+                    renderCreatorQuestions();
+                });
+            });
+
+            /**
+             * Re-renders the entire list of questions in the creator.
+             * This is what React does automatically.
+             */
+            function renderCreatorQuestions() {
+                creatorQuestionsContainer.innerHTML = ''; // Clear the container
+                appState.creatorQuestions.forEach((q, qIndex) => {
+                    const questionEl = document.createElement('div');
+                    questionEl.className = 'bg-gray-50 p-4 rounded-lg border border-gray-200';
+                    // We store the index in a data-attribute to find it later
+                    questionEl.dataset.index = qIndex; 
+
+                    const optionsHTML = (q.type === 'multiple-choice' || q.type === 'checkbox')
+                        ? `
+                        <div class="pl-4 space-y-2 mt-3">
+                            ${q.options.map((opt, oIndex) => `
+                                <div class="flex items-center space-x-2">
+                                    <input type="text" value="${opt}" data-field="option" data-o-index="${oIndex}" class="flex-grow p-2 border border-gray-200 rounded-lg">
+                                    <button type="button" data-action="remove-option" data-o-index="${oIndex}" class="text-red-500 hover:text-red-700 text-xs font-medium">X</button>
+                                </div>
+                            `).join('')}
+                            <button type="button" data-action="add-option" class="text-blue-600 hover:text-blue-800 text-sm font-medium mt-1">
+                                + Add Option
+                            </button>
+                        </div>
+                        ` : '';
+
+                    questionEl.innerHTML = `
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-sm font-medium text-gray-600">Question ${qIndex + 1} - (${q.type})</span>
+                            <button type="button" data-action="remove-question" class="text-red-500 hover:text-red-700 text-sm font-medium">
+                                Remove
+                            </button>
+                        </div>
+                        <div class="space-y-3">
+                            <input type="text" value="${q.label}" data-field="label" placeholder="Enter your question label" class="w-full p-2 border border-gray-300 rounded-lg">
+                            ${optionsHTML}
+                            <div class="flex items-center pt-2">
+                                <input id="required-${q.tempId}" type="checkbox" data-field="required" ${q.required ? 'checked' : ''} class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+                                <label for="required-${q.tempId}" class="ml-2 block text-sm text-gray-900">Required</label>
+                            </div>
+                        </div>
+                    `;
+                    creatorQuestionsContainer.appendChild(questionEl);
+                });
+            }
+
+            // Event Delegation for creator buttons
+            creatorQuestionsContainer.addEventListener('click', (e) => {
+                const action = e.target.dataset.action;
+                if (!action) return;
+
+                const questionEl = e.target.closest('[data-index]');
+                const qIndex = parseInt(questionEl.dataset.index, 10);
+                
+                if (action === 'remove-question') {
+                    appState.creatorQuestions.splice(qIndex, 1);
+                }
+                if (action === 'add-option') {
+                    appState.creatorQuestions[qIndex].options.push(`Option ${appState.creatorQuestions[qIndex].options.length + 1}`);
+                }
+                if (action === 'remove-option') {
+                    const oIndex = parseInt(e.target.dataset.oIndex, 10);
+                    appState.creatorQuestions[qIndex].options.splice(oIndex, 1);
+                }
+                
+                renderCreatorQuestions();
+            });
+
+            // Handle Save Form
+            creatorForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                creatorError.classList.add('hidden');
+                
+                // --- Manual Data Binding (This is what React saves us from) ---
+                // We update our state object from the DOM before sending.
+                appState.creatorQuestions.forEach((q, qIndex) => {
+                    const questionEl = creatorQuestionsContainer.querySelector(`[data-index="${qIndex}"]`);
+                    q.label = questionEl.querySelector(`[data-field="label"]`).value;
+                    q.required = questionEl.querySelector(`[data-field="required"]`).checked;
+                    
+                    if (q.options) {
+                        q.options = Array.from(questionEl.querySelectorAll(`[data-field="option"]`))
+                                         .map(optEl => optEl.value);
+                    }
+                });
+
+                const title = creatorTitle.value;
+                const description = creatorDescription.value;
+
+                if (!title) {
+                    creatorError.textContent = 'Form title is required.';
+                    creatorError.classList.remove('hidden');
+                    return;
+                }
+                if (appState.creatorQuestions.length === 0) {
+                    creatorError.textContent = 'Form must have at least one question.';
+                    creatorError.classList.remove('hidden');
+                    return;
+                }
+
+                try {
+                    const newForm = await api.post('/forms', {
+                        title,
+                        description,
+                        questions: appState.creatorQuestions,
+                    });
+                    navigateTo('viewForm', newForm._id); // Show the new form
+                } catch (err) {
+                    creatorError.textContent = `Error: ${err.message}`;
+                    creatorError.classList.remove('hidden');
+                }
+            });
+
+
+            // --- PAGE LOGIC: FORM VIEWER ---
+
+            /**
+             * Fetches a form by its ID and renders it for submission.
+             */
+            async function renderFormViewer() {
+                if (!appState.currentFormId) {
+                    viewError.textContent = 'No Form ID provided.';
+                    viewError.classList.remove('hidden');
+                    return;
+                }
+
+                viewLoading.classList.remove('hidden');
+                viewError.classList.add('hidden');
+                viewFormContainer.innerHTML = '';
+                appState.currentForm = null;
+
+                try {
+                    const form = await api.get(`/forms/${appState.currentFormId}`);
+                    appState.currentForm = form; // Cache the form data
+
+                    // Render Header
+                    const headerHTML = `
+                        <header class="border-b pb-4">
+                            <h2 class="text-3xl font-bold text-gray-800">${form.title}</h2>
+                            ${form.description ? `<p class="mt-2 text-gray-600">${form.description}</p>` : ''}
+                        </header>
+                    `;
+                    viewFormContainer.insertAdjacentHTML('beforeend', headerHTML);
+
+                    // Render Questions
+                    form.questions.forEach(q => {
+                        let questionHTML = '';
+                        const requiredStar = q.required ? '<span class="text-red-500 ml-1">*</span>' : '';
+                        
+                        switch (q.type) {
+                            case 'text':
+                                questionHTML = `<input type="text" name="${q._id}" ${q.required ? 'required' : ''} class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">`;
+                                break;
+                            case 'paragraph':
+                                questionHTML = `<textarea name="${q._id}" rows="4" ${q.required ? 'required' : ''} class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>`;
+                                break;
+                            case 'multiple-choice':
+                                questionHTML = `<div class="space-y-2">${q.options.map((opt, oIndex) => `
+                                    <label class="flex items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50">
+                                        <input type="radio" name="${q._id}" value="${opt}" ${q.required ? 'required' : ''} class="h-4 w-4 text-blue-600 border-gray-300">
+                                        <span class="ml-3 text-gray-700">${opt}</span>
+                                    </label>
+                                `).join('')}</div>`;
+                                break;
+                            case 'checkbox':
+                                questionHTML = `<div class="space-y-2">${q.options.map((opt, oIndex) => `
+                                    <label class="flex items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50">
+                                        <input type="checkbox" name="${q._id}" value="${opt}" class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+                                        <span class="ml-3 text-gray-700">${opt}</span>
+                                    </label>
+                                `).join('')}</div>`;
+                                break;
+                        }
+
+                        const questionBlock = `
+                            <div class="border-t pt-6">
+                                <label class="block text-lg font-medium text-gray-800">${q.label}${requiredStar}</label>
+                                <div class="mt-3">${questionHTML}</div>
+                            </div>
+                        `;
+                        viewFormContainer.insertAdjacentHTML('beforeend', questionBlock);
+                    });
+
+                    // Add submit button
+                    const submitButton = `
+                        <div class="pt-6 border-t">
+                            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                                Submit Response
+                            </button>
+                        </div>
+                    `;
+                    viewFormContainer.insertAdjacentHTML('beforeend', submitButton);
+
+                } catch (err) {
+                    viewError.textContent = `Error: ${err.message}. Form may not exist.`;
+                    viewError.classList.remove('hidden');
+                } finally {
+                    viewLoading.classList.add('hidden');
+                }
+            }
+            
+            // Handle Form Submission
+            viewFormContainer.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                viewError.classList.add('hidden');
+                
+                const answers = [];
+                let validationError = null;
+
+                // Loop over the cached form questions to gather answers
+                for (const q of appState.currentForm.questions) {
+                    if (q.type === 'checkbox') {
+                        // Handle checkboxes (can have multiple values)
+                        const checkedBoxes = viewFormContainer.querySelectorAll(`input[name="${q._id}"]:checked`);
+                        const values = Array.from(checkedBoxes).map(cb => cb.value);
+                        
+                        if (q.required && values.length === 0) {
+                            validationError = `Question is required: "${q.label}"`;
+                            break;
+                        }
+                        // We store checkbox arrays as a JSON string
+                        answers.push({ questionId: q._id, value: JSON.stringify(values) });
+                    
+                    } else {
+                        // Handle text, paragraph, radio
+                        const input = viewFormContainer.querySelector(`[name="${q._id}"]`);
+                        const value = (q.type === 'multiple-choice') 
+                            ? viewFormContainer.querySelector(`input[name="${q._id}"]:checked`)?.value
+                            : input.value;
+                        
+                        if (q.required && !value) {
+                            validationError = `Question is required: "${q.label}"`;
+                            break;
+                        }
+                        answers.push({ questionId: q._id, value: value || "" });
+                    }
+                }
+
+                if (validationError) {
+                    viewError.textContent = validationError;
+                    viewError.classList.remove('hidden');
+                    return;
+                }
+
+                try {
+                    await api.post(`/forms/${appState.currentFormId}/submit`, { answers });
+                    navigateTo('submitted');
+                } catch (err) {
+                    viewError.textContent = `Error: ${err.message}`;
+                    viewError.classList.remove('hidden');
+                }
+            });
+
+            // --- INITIALIZE THE APP ---
+            navigateTo('home');
+        });
+    </script>
+</body>
+</html>
